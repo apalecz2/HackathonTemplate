@@ -43,3 +43,7 @@ export function createApp() {
   app.use(errorHandler);
   return app;
 }
+
+// Vercel runs this file as the serverless entrypoint and needs the app as the default export.
+// Locally, src/index.js imports createApp and calls listen().
+export default createApp();

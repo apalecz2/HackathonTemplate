@@ -71,22 +71,27 @@ npm test
 
 Runs the API tests. They need no database or credentials.
 
-## Deploy (free tiers)
+## Deploy (Vercel + Supabase, free tiers)
 
-| Piece | Service | Configuration |
-|---|---|---|
-| Database + Auth | Supabase | Already created. Run `npm run db:migrate` once against it. |
-| API | Render (Web Service) | Root directory: repo root. Build: `npm install`. Start: `npm start`. Health check path: `/api/health`. Env vars: `DATABASE_URL`, `SUPABASE_URL`, `CLIENT_ORIGIN` (your Vercel URL), and `SUPABASE_JWT_SECRET` only for legacy projects. |
-| Frontend | Vercel | Root directory: `client`. Framework: Vite. Env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (your Render URL, no trailing slash). |
+The repo root `vercel.json` defines one Vercel project with two services on a single domain:
 
-Also add your Vercel URL in Supabase under Authentication > URL Configuration > Site URL.
+| Service | Root | Public path | Notes |
+|---|---|---|---|
+| `client` | `client/` | `/*` (everything else) | Vite build, with a fallback to `index.html` for client-side routes |
+| `server` | `server/` | `/api/*` | Express app exported from `server/src/app.js`; receives the original `/api/...` path |
+
+The browser and the API share a domain, so the client calls `/api/...` directly. No service-to-service calls exist, so no bindings are configured.
+
+1. Import the GitHub repo in Vercel (repo root as the project root).
+2. Add these environment variables to the project: `DATABASE_URL` (Session pooler string), `SUPABASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `CLIENT_ORIGIN` (your Vercel URL), and `SUPABASE_JWT_SECRET` only for legacy projects. Leave `VITE_API_URL` unset.
+3. Run `npm run db:migrate` once from your machine against the Supabase database.
+4. Add your Vercel URL in Supabase under Authentication > URL Configuration > Site URL.
+
+`npm run dev` still works for local development (API on 4000, Vite proxying `/api`). `vercel dev` runs both services together the way production does.
 
 Free-tier limitations:
-- Render's free service sleeps after about 15 minutes idle. The first request afterward takes 30-60 seconds.
 - Supabase free projects pause after about a week of inactivity and must be resumed from the dashboard.
-- `CLIENT_ORIGIN` must exactly match the browser's origin, or requests fail with CORS errors.
-
-Single-host option: run `npm run build` then `npm start`. The API serves `client/dist` when it exists, so one Render service can host both (set the `VITE_*` variables at build time).
+- Each serverless instance keeps its own small DB pool (2 connections on Vercel) to stay under Supabase's pooler limit.
 
 ## Updating the code
 
@@ -134,8 +139,7 @@ Delete `client/src/pages/Dashboard.jsx` and `Upload.jsx`, `client/src/components
 
 **Services**
 - **Supabase**: hosted PostgreSQL and authentication (email and password). Users sign in from the browser and get a token; the API trusts that token. The API connects to Postgres directly with `DATABASE_URL`.
-- **Render**: hosts the API.
-- **Vercel**: hosts the built React app.
+- **Vercel**: hosts the built React app and runs the Express API as a serverless function, as two services in one project.
 - **GitHub Actions**: `.github/workflows/ci.yml` runs the tests and a production build on every pull request and push to `main`.
 
 **How a request flows**

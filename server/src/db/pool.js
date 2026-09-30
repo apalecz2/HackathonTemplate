@@ -7,7 +7,9 @@ const useSsl = !/localhost|127\.0\.0\.1/.test(env.DATABASE_URL);
 export const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
   ssl: useSsl ? { rejectUnauthorized: false } : false,
-  max: 5,
+  // Each serverless instance holds its own pool, so keep it small on Vercel to stay under
+  // Supabase's pooler connection limit.
+  max: process.env.VERCEL ? 2 : 5,
 });
 
 export const query = (text, params) => pool.query(text, params);
