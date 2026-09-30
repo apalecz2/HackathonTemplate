@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Secrets: only .env.example is tracked
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Local tooling
+.claude/
+.vercel/
